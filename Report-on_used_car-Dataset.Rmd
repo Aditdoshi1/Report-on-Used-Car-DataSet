@@ -1,0 +1,387 @@
+---
+title: "Report on Used Car DataSet"
+author: "Adit Doshi"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+One of the key elements in boosting a nation's economy is its automobile sector. Prediction of used automobile sales has grown significantly in relevance in recent years. Over time, the amount of vehicles produced has steadily increased. People buy new or used cars based on their budgets as a result of the rising standard of living experienced by people worldwide. People who live in developing economies typically lease cars through contracts or loans. The car is delivered back to the dealer at the conclusion of the agreement. Thus, it is quite usual to see the market for used car sales outpace that of new car sales. Currently, as the car is sold on the secondary market, its price changes. The price of a new car is set by the manufacturer and is constant throughout the auto sales industry.
+
+However, the price of a car in the used automobile market is relative, fluctuating, and dependent on a number of criteria, including the vehicle's brand or manufacturer, make, age, cylinder capacity, and fuel type. As a result,there is no established criteria for determining the second-hand car's selling price. The prices of autos are occasionally inflated by auto dealers who prey on the customer's ignorance. It's a fascinating problem to figure out how to maintain a regular price range for various cars on the used market while also knowing the needs of the market. In other cases, the client is unwilling to spend a lot of money on the vehicle, or frequently, the customer's decision to buy a vehicle is impacted by the vehicle's features and how comfortable it is.
+
+When someone is considering to buy a used car, it is important to get the best possible deal for the car. The same can be achieved by keeping into account the factors that affect the pricing of the car. Factors such as Manufacturer's brand, condition of the car, odometer, title status, which year is the car model and state. This factors play an important role in deciding the price of the car. In order to get the best deal for a used car, it is important to understand what the average price of the car is in the used market,
+Once someone get a Idea of the average price, they can compare the listing price with the average price and decide if it is a good deal based on the specifications of the car.
+
+This visualization helps identify what the average price of a car is in a state and how the features are correlated to each other to help a user identify the needs and price of the car.
+
+# Context
+
+A data Visualization can be used by people to understand what car brand and model are popular and how are they prices based on different specifications of the car. It also helps a customer understand how the used car market work and make a correlation between the features of the car and what features are related. It helps visualize how the price of different cars and model are different in all the states and which car is more used in a state
+
+# Purpose of the Report
+
+1.  Which state has highest amount of car listing?
+2.  Which brand is highest for sale in the top 4 State's with highest number of car listing?
+3.  What is the mean & the price range of cars with different fuel type?
+4.  What is the price range of the different type of cars based on the odometer status?
+5.  Correlation of different types of features of the car
+6.  What is the average price per manufacturer and State?
+
+# Data-set
+
+The vehicle data set consists of 426880 rows and 26 columns. An entry for a secondhand car can be found in each row.
+
+# Cleaning the Data-Set
+
+Although not completely, I have cleaned the data set in accordance with the query. The data set was not completely cleaned because doing so would have resulted in all of the rows having some sort of missing value. I tried using the omit.na() command to solve the missing value problem in the entire data set at once. As a consequence, every row and column in the data set were entirely eliminated. To prevent this from occurring, I refrained from using this command and switched to cleaning each row/column separately as the necessity for the query arose. Here are a few instances of data cleaning:
+
+  1. fl_manu_count \<- fl_manu_count[!(fl_manu_count$manufacturer == ""), ]
+  2. ca_manu_count <- ca_manu_count[!(ca_manu_count$manufacturer == ""), ] 
+  3. manu_fuel_count \<- manu_fuel_count[!(manu_fuel_count$price == 0), ]
+  4. manu_fuel_count <- manu_fuel_count[!(manu_fuel_count$manufacturer == "NA"), ] 
+  5. manu_fuel_count \<- manu_fuel_count[!(manu_fuel_count\$fuel == ""), ]
+
+# Loading The Packages
+```{r}
+packages <-
+  c(
+    "tidyverse",
+    "janitor",
+    "data.table",
+    "devtools",
+    "ggmap",
+    "viridis",
+    "lubridate",
+    "reshape",
+    "ggplot2",
+    "wordcloud",
+    "knitr",
+    "rworldmap",
+    "rworldxtra",
+    "dplyr",
+    "tidyr",
+    "kableExtra"
+  )
+for (package in packages) {
+  library(package, character.only = TRUE)
+}
+```
+
+# Loading the Data-set
+
+```{r}
+vehicle<-fread("vehicles.csv")
+```
+
+# Findings
+
+```{r}
+State_count <- vehicle %>% group_by(state) %>% 
+  count(sort = TRUE)
+State_count1 <- State_count[1:10,]
+State_count1
+State_count1$state <- factor(State_count1$state, 
+                levels = State_count1$state[order(State_count1$n, 
+                decreasing = TRUE)])
+state <- ggplot(State_count1, aes(x=state ,y=n, fill = state))+
+  geom_bar(stat = "identity") + labs(x="State",y="Count") + 
+  ggtitle("Top 10 states with highest number of cars available for sale")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) 
+state
+```
+
+From the above bar plot, we can see that California has the highest number of listings in the Craigslist website. It is followed by the Florida state and Texas. California has more than 50k listing. From the plot we can see that Florida has approximately 50% less listing than California
+
+```{r}
+df <- vehicle %>% filter(state == "ca") 
+df1 <- vehicle %>% filter(state == "fl") 
+df2 <- vehicle %>% filter(state == "tx") 
+df3 <- vehicle %>% filter(state == "ny") 
+
+ca_manu_count <- df %>% group_by(manufacturer) %>% 
+  count(sort = TRUE)
+ca_manu_count <- ca_manu_count[!(ca_manu_count$manufacturer == ""), ]
+
+ca_manu_count1 <- ca_manu_count[1:5,]
+ca_manu_count1$manufacturer <- factor(ca_manu_count1$manufacturer, 
+                                levels = ca_manu_count1$manufacturer
+                                [order(ca_manu_count1$n, decreasing = TRUE)])
+fl_manu_count <- df1 %>% group_by(manufacturer) %>% 
+  count(sort = TRUE)
+fl_manu_count <- fl_manu_count[!(fl_manu_count$manufacturer == ""), ]
+
+fl_manu_count1 <- fl_manu_count[1:5,]
+fl_manu_count1$manufacturer <- factor(fl_manu_count1$manufacturer, 
+                                levels = fl_manu_count1$manufacturer
+                                [order(fl_manu_count1$n, decreasing = TRUE)])
+
+tx_manu_count <- df2 %>% group_by(manufacturer) %>% 
+  count(sort = TRUE)
+tx_manu_count <- tx_manu_count[!(tx_manu_count$manufacturer == ""), ]
+
+tx_manu_count1 <- tx_manu_count[1:5,]
+tx_manu_count1$manufacturer <- factor(tx_manu_count1$manufacturer, 
+                                    levels = tx_manu_count1$manufacturer
+                                [order(tx_manu_count1$n, decreasing = TRUE)])
+
+ny_manu_count <- df3 %>% group_by(manufacturer) %>% 
+  count(sort = TRUE)
+ny_manu_count <- ny_manu_count[!(ny_manu_count$manufacturer == ""), ]
+
+
+ny_manu_count1 <- ny_manu_count[1:5,]
+ny_manu_count1$manufacturer <- factor(ny_manu_count1$manufacturer, 
+                                  levels = ny_manu_count1$manufacturer
+                                  [order(ny_manu_count1$n, decreasing = TRUE)])
+
+ca_manu <- ggplot(ca_manu_count1, aes(x=manufacturer ,y=n, fill = manufacturer))+
+  geom_bar(stat = "identity") + labs(x="Manufacturer",y="Count") + 
+  ggtitle("    Top 5 brands with highest no of cars for sale in California")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) 
+
+fl_manu <- ggplot(fl_manu_count1, aes(x=manufacturer ,y=n, fill = manufacturer))+
+  geom_bar(stat = "identity") + labs(x="Manufacturer",y="Count") + 
+  ggtitle("   Top 5 brands with highest no of cars for sale in Florida")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) 
+
+tx_manu <- ggplot(tx_manu_count1, aes(x=manufacturer ,y=n, fill = manufacturer))+
+  geom_bar(stat = "identity") + labs(x="Manufacturer",y="Count") + 
+  ggtitle("  Top 5 brands with highest no of cars for sale in Texas")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) 
+
+ny_manu <- ggplot(ny_manu_count1, aes(x=manufacturer ,y=n, fill = manufacturer))+
+  geom_bar(stat = "identity") + labs(x="Manufacturer",y="Count") + 
+  ggtitle("  Top 5 brands with highest no of cars for sale in New York")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) 
+
+library(ggpubr)
+ggarrange(ca_manu, fl_manu, labels = c(), nrow= 2, ncol=1)
+ggarrange(tx_manu, ny_manu, labels = c(), nrow= 2, ncol=1)
+```
+
+Here, I am filtering out Top 4 states which are - California, Florida, Texas & New York. From these graph, we can confirm that Ford has the highest number of listing in all the above mentioned states. This is because Ford stands out as the most popular automaker in the United States. This is hardly surprising considering that the Ford F-Series pickup line has been the best-selling truck in America for 43 years running.
+
+The listing of Chevrolet and Toyota is approximately similar in the state of California and Florida. The listing of Chevrolet is approximately double than that of Toyota in the state of Texas and New York
+
+```{r}
+veh1<- vehicle %>% filter(manufacturer %in% c("ford", "chevrolet", "toyota", "nissan", "honda"))
+
+manu_fuel_count <- veh1 %>% group_by(manufacturer, price, fuel) %>% 
+  count(sort = TRUE)
+manu_fuel_count <- manu_fuel_count[!(manu_fuel_count$price == 0), ]
+manu_fuel_count <- manu_fuel_count[!(manu_fuel_count$manufacturer == "NA"), ]
+manu_fuel_count <- manu_fuel_count[!(manu_fuel_count$fuel == ""), ]
+manu_fuel_count$price  <- as.integer(manu_fuel_count$price)
+manu_fuel <- ggplot(manu_fuel_count, aes(x=manufacturer ,y=n, fill = fuel))+
+  geom_col(position = "dodge" , width = 0.6)+ 
+  ggtitle("Cars on sale for top 5 manufacturer according to fuel type")+ 
+  labs(x="Manufacturer",y="Count")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) + ylim(0,600)
+manu_fuel + scale_fill_brewer(palette = "Set1")
+```
+
+Irrespective of the car brand, Gas fuel type is the most listed On the website. This is because Diesel engines are heavier and perform less well than gasoline engines. Diesel is highest preferred after "gas" & "other" fuel type which is unknown. This can be because of Diesel fuel type which is thicker and provides more power and mileage than other fuel types
+
+```{r}
+price_fuel <- ggplot(manu_fuel_count, aes(x=fuel ,y=price, fill = fuel))+
+  geom_boxplot()+ labs(x="Fuel",y="Price") +
+  ggtitle("Price range of cars available for sale according to fuel type")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) + ylim(1000, 70000)
+price_fuel
+```
+
+Here is a Box-plot which represents that the median of Diesel Fuel Cars is more than all the other fuel type cars even though as seen in the previous graph, Gas cars are the highest and more preferred on craigslist website.
+
+```{r}
+year_fuel_count <- veh1 %>% group_by(year, price, fuel) %>% 
+  count(sort = TRUE)
+
+year_fuel_count <- year_fuel_count[!(year_fuel_count$price == 0), ]
+year_fuel_count <- year_fuel_count[!(year_fuel_count$fuel == ""), ]
+year_fuel_count$price  <- as.integer(year_fuel_count$price)
+year_fuel_count1 <-aggregate( price ~ year + fuel, year_fuel_count, mean )
+year_count <- ggplot(year_fuel_count1, aes(x=year, y=price, colour = fuel)) +
+  geom_line() + labs(x="Year",y="Price") +
+  ggtitle("Price range of cars according to fuel type over the Years")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) + ylim(1000, 70000) + xlim(2000, 2020)
+
+year_count
+```
+
+From the above line graph, we can interpret that the diesel cars prices have increase significantly over the years. We can even observe a small downfall during 2007-2008 that is due to the recession due to the economic crisis. We can observe that break in the line graph which is due to the missing values in the data set.
+
+```{r}
+veh2 <- vehicle %>% filter(manufacturer == "ford") %>% filter(type %in% 
+                                      c("hatchback", "mini-van", "pickup", "sedan", "SUV")) 
+type_odo_count <- veh2%>% group_by(odometer, type, price) %>% 
+  count(sort = TRUE)
+type_odo_count <- type_odo_count[!(type_odo_count$price == 0), ]
+type_odo_count <- type_odo_count[!(type_odo_count$odometer == 0), ]
+type_odo_count <- type_odo_count[!(type_odo_count$type == ""), ]
+type_odo_count
+type_odo_count$price  <- as.integer(type_odo_count$price)
+type_count <- ggplot(type_odo_count, aes(x=odometer, y=price, colour = type)) +
+  geom_point() + labs(x="Odometer",y="Price") +
+  ggtitle("Price range of cars for sale according to type and odometer")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) + ylim(1000, 70000) + xlim(1000, 200000)
+type_count
+
+```
+
+Here, We are trying to visualize that the price of a car decreases if the car has high amount of miles on it and the price is high if the car has low amount of miles on it. We can also observe that the cost of the pickup trucks/cars is significantly high even if it has more number of miles on it.
+
+```{r}
+veh3 <- vehicle %>% filter(manufacturer == "ford")
+
+ford_model_count <- veh3 %>% group_by(model) %>% 
+  count(sort = TRUE)
+ford_model_count
+
+```
+
+```{r}
+
+ford_char <- veh3 %>% select(model, condition, cylinders, fuel, title_status, price)
+ford_char$model <- as.numeric(as.factor(ford_char$model))
+ford_char$condition <- as.numeric(as.factor(ford_char$condition))
+ford_char$cylinders <- as.numeric(as.factor(ford_char$cylinders))
+ford_char$fuel <- as.numeric(as.factor(ford_char$fuel))
+ford_char$title_status <- as.numeric(as.factor(ford_char$title_status))
+ford_char$price <- as.numeric(as.factor(ford_char$price))
+library(corrplot)
+corrplot(cor(ford_char), type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
+```
+
+This is a correlation graph. Here, 0 to 1 represents a positive correlation(in Blue), while 0 to -1 represents a negative correlation(In Red) Here we can observe that, the Condition is positively correlated with the number of cylinders in the car. cars with 6 cylinders is highest in the data listing. Similarly we can also see a correlation between fuel type, model, price, number of cylinder and conditions.
+
+```{r}
+
+avg_price_state <-aggregate( price ~ state, vehicle, mean)
+avg_price_state <- filter(avg_price_state, !price > 30000)
+avg_price_manufacturer <-aggregate( price ~ manufacturer, vehicle, mean)
+avg_price_manufacturer <- filter(avg_price_manufacturer, !price > 30000)
+
+avg_state <- ggplot(avg_price_state, aes(x=state ,y=price, fill = state))+
+  geom_bar(stat = "identity") + labs(x="State",y="Price") + 
+  ggtitle("Average price per state")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5))+ 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+ ylim(0, 30000)
+avg_state
+
+```
+
+The above Bar-plot represent average price of cars per state. We can see that Ohio(OH) has the highest average of car price, this can be because the real-estate in Ohio is comparatively cheap than other states, this is why people might prefer buying luxury cars to commute. Similarly, Maine(ME) has the lowest average car price compared to other states.
+
+```{r}
+
+avg_manufacturer <- ggplot(avg_price_manufacturer, aes(x=manufacturer ,y=price, fill = manufacturer))+
+  geom_bar(stat = "identity") + labs(x="manufacturer",y="Price") + 
+  ggtitle("Average price per manufacturer")+
+  theme(plot.title = element_text(color="black", size=14, face="bold"),
+        axis.title.x = element_text(color="black", size=14),
+        axis.title.y = element_text(color="black", size=14)) + 
+  theme(plot.title=element_text(hjust=0.5)) + ylim(0, 30000) + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+avg_manufacturer
+
+```
+
+The above Bar-plot represents the average price of the cars based on the brands. We can see that the brand Alfa-Romeo has the highest average price of the cars. This is because Alfa-Romeo is an Italian luxury car manufacturer.
+
+```{r}
+title_status_count <- vehicle %>% group_by(cylinders) %>% 
+  count(sort = TRUE)
+title_status_count <- title_status_count[!(title_status_count$cylinders == ""), ]
+sum <- sum(title_status_count$n)
+title_status_count$percent <- round(((title_status_count$n)/sum)*100, 2)
+title_status_count
+pie <- ggplot(title_status_count, aes(x = "", y = percent, fill = cylinders)) +
+  geom_col() +   ggtitle("Pie chart to display type count of different cylinders") + 
+  coord_polar(theta = "y")
+pie + scale_fill_brewer(palette = "Set1")
+
+```
+
+The above pie-chart represents number of cars with different types of cylinders. We can interpret that cars with 6 cylinders have the highest amount of listing followed by 4 cylinders and 8 cylinder. This can be because people prefer 6 cylinders over 4 cylinders engine can produce low RPM torque and power better than a turbocharged four-cylinder
+
+
+# Conclusion
+
+We can see that there are several categorical columns in the vehicle data set. The above visualizations helps us answer our questions. I have chosen 4 different states that is California, Florida, Texas and New york. These are the top 4 states with the highest number of listings. Among these 4 states, California has the highest number of listings. This can be due to the population of the California. California stands at the top in the United states for its population with the population of 39.35 Million people.
+
+Later I am focusing on these 4 states. What we have observed from the above visualization is they had common Top Manufacturer which is ford. Out of the 4 states, 3 of the states have the same highest manufacturers. Ford was able to avoid bankruptcy in the 2008 financial collapse. Ford has the highest number of listings in all the states is because of the pickup trucks. Ford is among the companies to offer a range of transportation services rather than simply producing and selling cars.
+
+Moving on, I am choosing Top 5 manufacturers and comparing their fuel type. We notice that most number of cars have Gas as their fuel type followed by Diesel. Gas is cost competitive, relatively abundant hence convenient and the cleanest burning fossil fuel. We even observe that electric cars are comparatively less in the listings. The main reason can be electric cars were introduced in the later years. The older electric cars were less convenient as there were less number of charging stations. Additionally, We notice that Electric cars are comparatively cheaper in price. This is because there is no need to change the oil regularly, No engine to manage and fewer parts to wear down. Electric cars are cost efficient and maintain than internal combustion engine vehicles. From the Box-plot we also notice that cars with gas fuel type have moderate prices. The graph also tells us about the steady increase in the price of diesel cars over the years. We have aggregated the price in the line graph according to the year and the fuel type. Even though all the fuel type cars prices have increase over the years, diesel has shown significant growth in the price.
+
+I have then explored a scatter plot of odometer vs Price in-accordance to different types of car. We can see that Odometer and the price is inversely proportional. We can see that as the odometer increases, the price of the car decreases and vice-versa and it is quite visible in the scatter plot as we see a downward trend. We see that Pickup Cars(Green Dots) are the top. This means that price of Pickup trucks is quite higher than normal cars despite of the odometer. This is because Pickup Trucks are built to be more durable which gives them a high resell value. The prices are high because their demand out-strips the supply.
+
+The correlation plot shows us the positive relation between Cylinder and Condition of the car. It also shows us a negative relation between fuel and cylinders because more the number of cylinders it will consume more amount of fuel. The plot explains us a positive relation between price and the model. Newer the model higher the price.
+
+The next Graph represents Average price of cars in different states. We notice that Ohio(OH) has higher average price compared to other states. This can be because the standard of living and less population. We also observe that Maine(ME) has the lowest average car price. Maine is an affordable place to own a vehicle as its the cheapest state for car insurance.
+
+# Future Scope
+
+1. Combine a new dataset to get a better analysis of the car listings. Also a new column to view if the car at the listed price was sold.
+2. Compare a Weather dataset to find out which car is sold more in different weather conditions.
+
+
+# Data Dictionary
+
+1.  manufacturer: Brand of the vehicle
+2.  price: The vehicle's asking price as stated in the listing.
+3.  State: The state code of the listing's creation.
+4.  year: The year that the specified vehicle was first registered.
+5.  condition: List of the vehicle's conditions.
+6.  cylinders: The number of cylinders an engine has determines how big it is.
+7.  size: The vehicle's size classification.
+8.  lat: The listing's latitude point of origin.
+9.  long: The listing's longitude starting point.
+10. region: The area from whence the listing was created.
+11. model: The vehicle's model number.
+12. odometer: The amount of miles displayed on the car's odometer.
+13. type Distinguishes the cars according to their type
+14. posting_date: Date of when the listing was made.
+15. drive: Contains information about how the drive train delivers its power eg. AWD, FWD, RWD etc.
+16. transmission: The type of transmission on the vehicle. eg Automatic, Manual
+
+```{r}
+sessionInfo()
+
+```
